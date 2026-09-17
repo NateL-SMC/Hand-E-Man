@@ -1,10 +1,11 @@
-import { Text, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 
-export default function App() {
+export default function StartPage() {
   return (
     <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-xl font-bold text-blue-500">
-        Welcome to Nativewind!
+      <ActivityIndicator size="large" color="#0000ff" />
+      <Text className="mt-4 text-lg font-semibold text-gray-700">
+        Loading...
       </Text>
     </View>
   );
