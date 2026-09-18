@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import {
   widthToDP as wp,
@@ -35,7 +36,9 @@ export default function SignUp() {
       !usernameRef.current ||
       !profileRef.current
     ) {
+      Alert.alert("Please enter all required fields.");
       alert("Please enter all required fields.");
+
       return;
     }
 
@@ -52,6 +55,7 @@ export default function SignUp() {
 
     //console.log("Register response:", response);
     if (!response.success) {
+      Alert.alert(`Registration failed: ${response.msg}`);
       alert(`Registration failed: ${response.msg}`);
       return;
     } else {

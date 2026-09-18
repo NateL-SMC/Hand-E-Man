@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import {
   widthToDP as wp,
@@ -17,26 +18,33 @@ import { Octicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
 import { useAuth } from "../../context/authContext";
-import { login } from "../../context/authContext";
 
 export default function SignIn() {
   const router = useRouter();
   const emailRef = useRef("");
   const passwordRef = useRef("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth;
+  const { login } = useAuth();
 
   const handleSignIn = async () => {
     if (!emailRef.current || !passwordRef.current) {
+      Alert.alert("Please enter both email and password.");
       alert("Please enter both email and password.");
+
       return;
     }
 
     setLoading(true);
 
-    const response = await login;
+    const response = await login(emailRef.current, passwordRef.current);
 
     setLoading(false);
+
+    if (!response.success) {
+      Alert.alert(`Login failed: ${response.msg}`);
+      alert(`Login failed: ${response.msg}`);
+      return;
+    }
   };
 
   return (
