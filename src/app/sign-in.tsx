@@ -15,13 +15,16 @@ import {
 } from "react-native-responsive-screens";
 import { Octicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { useAuth } from "../../context/authContext";
+import { login } from "../../context/authContext";
 
 export default function SignIn() {
   const router = useRouter();
-
   const emailRef = useRef("");
   const passwordRef = useRef("");
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth;
 
   const handleSignIn = async () => {
     if (!emailRef.current || !passwordRef.current) {
@@ -29,7 +32,11 @@ export default function SignIn() {
       return;
     }
 
-    // Login Process
+    setLoading(true);
+
+    const response = await login;
+
+    setLoading(false);
   };
 
   return (

@@ -10,6 +10,9 @@ import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   updateProfile,
+  signOut,
+  getAuth,
+  signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth, db } from "../firebaseConfig";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -36,6 +39,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | undefined>(
     undefined,
   );
+  const auth = getAuth();
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -52,12 +56,23 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   const login = async (email: string, password: string) => {
     try {
-    } catch (e) {}
+      const response = await signInWithEmailAndPassword(auth, email, password);
+      return { success: true };
+    } catch (e) {
+      let msg = e.message;
+      if (msg.includes("(auth/invalid-email)")) msg = "invalid email";
+      return { success: false, msg };
+    }
   };
 
   const logout = async () => {
-    try {
-    } catch (e) {}
+    await signOut(auth)
+      .then(() => {
+        return { success: true };
+      })
+      .catch((e) => {
+        return { success: false, msg: e.message, error: e };
+      });
   };
 
   const register = async (

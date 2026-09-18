@@ -50,9 +50,12 @@ export default function SignUp() {
 
     setLoading(false);
 
-    console.log("Register response:", response);
+    //console.log("Register response:", response);
     if (!response.success) {
       alert(`Registration failed: ${response.msg}`);
+      return;
+    } else {
+      router.replace("/StudentDir/home");
       return;
     }
   };
