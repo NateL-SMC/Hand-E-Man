@@ -1,185 +1,149 @@
 import { StatusBar } from "expo-status-bar";
 import {
-  Image,
-  Pressable,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+  ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
-import {
-  widthToDP as wp,
-  heightToDP as hp,
-  widthToFonts as wf,
-  heightToFonts as hf,
-} from "react-native-responsive-screens";
-import { Feather, Octicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../context/authContext";
+import AuthBackground from "../components/AuthBackground";
+import AuthField from "../components/AuthField";
 
 export default function SignUp() {
   const router = useRouter();
   const { register } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<"customer" | "handyman">("customer");
 
-  const emailRef = useRef("");
-  const passwordRef = useRef("");
   const usernameRef = useRef("");
-  const profileRef = useRef("");
+  const passwordRef = useRef("");
+  const emailRef = useRef("");
+  const phoneRef = useRef("");
+  const addressRef = useRef("");
 
   const handleRegister = async () => {
     if (
-      !emailRef.current ||
-      !passwordRef.current ||
       !usernameRef.current ||
-      !profileRef.current
+      !passwordRef.current ||
+      !emailRef.current ||
+      !phoneRef.current ||
+      !addressRef.current
     ) {
       Alert.alert("Please enter all required fields.");
       alert("Please enter all required fields.");
-
       return;
     }
 
     setLoading(true);
-
-    let response = await register(
-      emailRef.current,
+    const response = await register(
+      emailRef.current.trim(),
       passwordRef.current,
-      usernameRef.current,
-      profileRef.current,
+      usernameRef.current.trim(),
+      "", // no profile URL field in the new design
+      {
+        phone: phoneRef.current.trim(),
+        address: addressRef.current.trim(),
+        role,
+      },
     );
-
     setLoading(false);
 
-    //console.log("Register response:", response);
     if (!response.success) {
       Alert.alert(`Registration failed: ${response.msg}`);
       alert(`Registration failed: ${response.msg}`);
-      return;
-    } else {
-      router.replace("/StudentDir/home");
-      return;
     }
+    // _layout.tsx redirects once isAuthenticated flips to true
   };
 
   return (
-    //<View className="flex-1 items-center justify-center bg-white">
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "white",
-      }}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      className="flex-1 bg-[#F8FAFC] overflow-hidden"
     >
       <StatusBar style="dark" />
-      <View className="w-24 h-24 mb-4 bg-white-750 rounded-full items-center justify-center  ">
-        {/* signIn Image */}
-        <Image
-          style={{ width: wp(20), height: hp(20) }}
-          resizeMode="contain"
-          source={require("../../assets/images/android-icon-foreground.png")}
-        />
-      </View>
+      <AuthBackground variant="register" />
 
-      <View className="gap-10">
-        <Text
-          style={{ fontSize: wf(1.5), fontWeight: "bold" }}
-          className="text-neutral-700 text-center tracking-wider"
-        >
-          Sign Up
+      <ScrollView
+        contentContainerClassName="px-10 pt-16 pb-10"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text className="font-mono text-4xl font-bold text-[#F59E0B] mb-6">
+          Register
         </Text>
 
-        <View className="gap-4">
-          <View
-            style={{ height: hp(7) }}
-            className="flex-row items-center justify-center gap-4 bg-neutral-100 border-gray-300 border-2 rounded-lg px-10"
-          >
-            <Feather name="user" size={wf(1.5)} color="gray" />
-            <TextInput
-              onChangeText={(value) => (usernameRef.current = value)}
-              style={{ fontSize: wf(1) }}
-              className="placeholder:text-gray-500 flex-1 text-neutral-800"
-              placeholder="Username"
-              placeholderTextColor="gray"
-            />
-          </View>
+        <AuthField
+          label="Username"
+          onChangeText={(v) => (usernameRef.current = v)}
+        />
+        <AuthField
+          label="Password"
+          secure
+          onChangeText={(v) => (passwordRef.current = v)}
+        />
+        <AuthField
+          label="Email"
+          keyboardType="email-address"
+          onChangeText={(v) => (emailRef.current = v)}
+        />
+        <AuthField
+          label="Contact Number"
+          keyboardType="phone-pad"
+          onChangeText={(v) => (phoneRef.current = v)}
+        />
+        <AuthField
+          label="Address"
+          autoCapitalize="words"
+          onChangeText={(v) => (addressRef.current = v)}
+        />
 
-          <View
-            style={{ height: hp(7) }}
-            className="flex-row items-center justify-center gap-4 bg-neutral-100 border-gray-300 border-2 rounded-lg px-10"
-          >
-            <Octicons name="mail" size={wf(1.5)} color="gray" />
-            <TextInput
-              onChangeText={(value) => (emailRef.current = value)}
-              style={{ fontSize: wf(1) }}
-              className="placeholder:text-gray-500 flex-1 text-neutral-800"
-              placeholder="Email"
-              placeholderTextColor="gray"
-            />
-          </View>
-
-          <View className="gap-3">
-            <View
-              style={{ height: hp(7) }}
-              className="flex-row items-center justify-center gap-4 bg-neutral-100 border-gray-300 border-2 rounded-lg px-10"
+        {/* Customer / Handyman toggle */}
+        <View
+          className="flex-row rounded-full border border-[#E2E8F0] bg-white p-1 mt-2"
+          style={{ elevation: 2 }}
+        >
+          {(["customer", "handyman"] as const).map((r) => (
+            <Pressable
+              key={r}
+              onPress={() => setRole(r)}
+              className={`flex-1 h-9 rounded-full items-center justify-center ${role === r ? "bg-[#FBBF24]" : ""}`}
             >
-              <Octicons name="lock" size={wf(1.5)} color="gray" />
-              <TextInput
-                onChangeText={(value) => (passwordRef.current = value)}
-                style={{ fontSize: wf(1) }}
-                className="placeholder:text-gray-500 flex-1 text-neutral-800"
-                placeholder="Password"
-                placeholderTextColor="gray"
-                secureTextEntry={true}
-              />
-            </View>
-          </View>
-
-          <View
-            style={{ height: hp(7) }}
-            className="flex-row items-center justify-center gap-4 bg-neutral-100 border-gray-300 border-2 rounded-lg px-10"
-          >
-            <Feather name="link" size={wf(1.5)} color="gray" />
-            <TextInput
-              onChangeText={(value) => (profileRef.current = value)}
-              style={{ fontSize: wf(1) }}
-              className="placeholder:text-gray-500 flex-1 text-neutral-800"
-              placeholder="Profile URL"
-              placeholderTextColor="gray"
-            />
-          </View>
-
-          {/*In the interest of time, we'll be skipping Lottie animations :(  */}
-          <TouchableOpacity onPress={handleRegister}>
-            <Text
-              style={{ fontSize: wf(1), color: "white" }}
-              className="font-bold text-center bg-sky-500 py-3 rounded-xl"
-            >
-              Sign Up
-            </Text>
-          </TouchableOpacity>
-
-          <View className="flex-row items-center justify-center gap-2">
-            <Text
-              style={{ fontSize: wf(0.8), color: "gray" }}
-              className="text-center"
-            >
-              Already have an account?
-            </Text>
-            <Pressable onPress={() => router.push("/sign-in")}>
-              <Text
-                style={{ fontSize: wf(0.8), color: "indigo" }}
-                className="font-semibold text-center"
-              >
-                Sign In
+              <Text className="font-mono text-xs font-bold text-[#0F172A] capitalize">
+                {r}
               </Text>
             </Pressable>
-          </View>
+          ))}
         </View>
-      </View>
-    </View>
+
+        <Pressable
+          onPress={handleRegister}
+          disabled={loading}
+          className="mt-8 h-14 rounded-lg bg-[#F59E0B] items-center justify-center"
+        >
+          {loading ? (
+            <ActivityIndicator color="#0F172A" />
+          ) : (
+            <Text className="font-mono text-xl font-bold text-[#0F172A]">
+              Sign Up
+            </Text>
+          )}
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push("/sign-in")}
+          className="mt-4 items-center"
+        >
+          <Text className="font-mono text-[11px] text-red-600">
+            Already have an account?
+          </Text>
+        </Pressable>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

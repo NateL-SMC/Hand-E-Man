@@ -1,23 +1,18 @@
 import { StatusBar } from "expo-status-bar";
 import {
-  Image,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
-  Alert,
 } from "react-native";
-import {
-  widthToDP as wp,
-  heightToDP as hp,
-  widthToFonts as wf,
-  heightToFonts as hf,
-} from "react-native-responsive-screens";
-import { Octicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { useAuth } from "../../context/authContext";
+import { useAuth } from "../context/authContext";
+import AuthBackground from "../components/AuthBackground";
+import AuthField from "../components/AuthField";
 
 export default function SignIn() {
   const router = useRouter();
@@ -30,14 +25,11 @@ export default function SignIn() {
     if (!emailRef.current || !passwordRef.current) {
       Alert.alert("Please enter both email and password.");
       alert("Please enter both email and password.");
-
       return;
     }
 
     setLoading(true);
-
     const response = await login(emailRef.current, passwordRef.current);
-
     setLoading(false);
 
     if (!response.success) {
@@ -45,104 +37,60 @@ export default function SignIn() {
       alert(`Login failed: ${response.msg}`);
       return;
     }
+    // _layout.tsx redirects once isAuthenticated flips to true
   };
 
   return (
-    //<View className="flex-1 items-center justify-center bg-white">
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "white",
-      }}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      className="flex-1 bg-[#F8FAFC] overflow-hidden"
     >
       <StatusBar style="dark" />
-      <View className="w-24 h-24 mb-4 bg-white-750 rounded-full items-center justify-center  ">
-        {/* signIn Image */}
-        <Image
-          style={{ width: wp(20), height: hp(20) }}
-          resizeMode="contain"
-          source={require("../../assets/images/reactLogo3.png")}
-        />
-      </View>
+      <AuthBackground variant="login" />
 
-      <View className="gap-10">
-        <Text
-          style={{ fontSize: wf(1.5), fontWeight: "bold" }}
-          className="text-neutral-700 text-center tracking-wider"
-        >
-          Sign In
+      <View className="flex-1 justify-center px-10 pb-16">
+        <Text className="font-mono text-[44px] font-bold text-[#F59E0B] mb-14">
+          Login
         </Text>
 
-        <View className="gap-4">
-          <View
-            style={{ height: hp(7) }}
-            className="flex-row items-center justify-center gap-4 bg-neutral-100 border-gray-300 border-2 rounded-lg px-10"
-          >
-            <Octicons name="mail" size={wf(1.5)} color="gray" />
-            <TextInput
-              onChangeText={(value) => (emailRef.current = value)}
-              style={{ fontSize: wf(1) }}
-              className="placeholder:text-gray-500 flex-1 text-neutral-800"
-              placeholder="Email"
-              placeholderTextColor="gray"
-            />
-          </View>
+        {/* Firebase signs in with email, so this field is Email (design said Username) */}
+        <AuthField
+          label="Email"
+          keyboardType="email-address"
+          onChangeText={(v) => (emailRef.current = v)}
+          shadow
+        />
+        <View className="h-2" />
+        <AuthField
+          label="Password"
+          secure
+          onChangeText={(v) => (passwordRef.current = v)}
+          shadow
+        />
 
-          <View className="gap-3">
-            <View
-              style={{ height: hp(7) }}
-              className="flex-row items-center justify-center gap-4 bg-neutral-100 border-gray-300 border-2 rounded-lg px-10"
-            >
-              <Octicons name="lock" size={wf(1.5)} color="gray" />
-              <TextInput
-                onChangeText={(value) => (passwordRef.current = value)}
-                style={{ fontSize: wf(1) }}
-                className="placeholder:text-gray-500 flex-1 text-neutral-800"
-                placeholder="Password"
-                placeholderTextColor="gray"
-                secureTextEntry={true}
-              />
-            </View>
-            <View>
-              <Text
-                style={{ fontSize: wf(0.8), color: "indigo" }}
-                className="font-semibold text-right"
-              >
-                Forgot Password?
-              </Text>
-            </View>
-          </View>
-
-          {/*In the interest of time, we'll be skipping Lottie animations :(  */}
-          <TouchableOpacity onPress={handleSignIn}>
-            <Text
-              style={{ fontSize: wf(1), color: "white" }}
-              className="font-bold text-center bg-sky-500 py-3 rounded-xl"
-            >
-              Sign In
+        <Pressable
+          onPress={handleSignIn}
+          disabled={loading}
+          className="mt-14 h-14 rounded-lg bg-[#F59E0B] items-center justify-center"
+        >
+          {loading ? (
+            <ActivityIndicator color="#0F172A" />
+          ) : (
+            <Text className="font-mono text-xl font-bold text-[#0F172A]">
+              Login
             </Text>
-          </TouchableOpacity>
+          )}
+        </Pressable>
 
-          <View className="flex-row items-center justify-center gap-2">
-            <Text
-              style={{ fontSize: wf(0.8), color: "gray" }}
-              className="text-center"
-            >
-              Don't have an account?
-            </Text>
-            <Pressable onPress={() => router.push("/sign-up")}>
-              <Text
-                style={{ fontSize: wf(0.8), color: "indigo" }}
-                className="font-semibold text-center"
-              >
-                Sign Up
-              </Text>
-            </Pressable>
-          </View>
+        <View className="flex-row justify-center items-center mt-4">
+          <Text className="font-mono text-[11px] text-[#0F172A]">
+            Don't have an account?{" "}
+          </Text>
+          <Pressable onPress={() => router.push("/sign-up")}>
+            <Text className="font-mono text-[11px] text-red-600">Sign Up</Text>
+          </Pressable>
         </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
