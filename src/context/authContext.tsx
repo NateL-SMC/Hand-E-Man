@@ -37,6 +37,8 @@ export type UserProfile = {
   address?: string;
   location?: string;
   role?: "customer" | "handyman" | "admin";
+  handymanId?: string; // worker accounts: id of the handymen/{id} doc they control (defaults to their uid)
+  expoPushToken?: string;
 };
 
 export type RegisterExtra = Pick<UserProfile, "phone" | "address" | "role">;
@@ -44,6 +46,7 @@ export type RegisterExtra = Pick<UserProfile, "phone" | "address" | "role">;
 type AuthContextValue = {
   user: User | null;
   profile: UserProfile | null;
+  profileLoaded: boolean; // true once the users/{uid} doc has been read (even if it does not exist)
   isAuthenticated: boolean | undefined;
   login: (email: string, password: string) => Promise<AuthResult>;
   register: (
@@ -66,6 +69,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | undefined>(
     undefined,
   );
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
@@ -75,6 +79,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       } else {
         setUser(null);
         setProfile(null);
+        setProfileLoaded(false);
         setIsAuthenticated(false);
       }
     });
@@ -88,8 +93,14 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     if (!user?.uid) return;
     return onSnapshot(
       doc(db, "users", user.uid),
-      (snap) => setProfile(snap.exists() ? (snap.data() as UserProfile) : null),
-      (error) => console.error("Error listening to user profile:", error),
+      (snap) => {
+        setProfile(snap.exists() ? (snap.data() as UserProfile) : null);
+        setProfileLoaded(true);
+      },
+      (error) => {
+        console.error("Error listening to user profile:", error);
+        setProfileLoaded(true);
+      },
     );
   }, [user?.uid]);
 
@@ -155,7 +166,32 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
           userId: response.user.uid,
           role: "customer", // default, overridden by extra.role
           ...extra,
+          ...(extra.role === "handyman" ? { handymanId: response.user.uid } : {}),
         });
+
+        // Worker accounts also get a public handymen/{uid} profile that customers can find.
+        if (extra.role === "handyman") {
+          await setDoc(doc(db, "handymen", response.user.uid), {
+            ownerUid: response.user.uid,
+            name: username,
+            category: "Plumbing",
+            headline: "Handyman",
+            yearsExp: 0,
+            bio: "",
+            rating: 0,
+            reviewCount: 0,
+            status: "unavailable",
+            active: false,
+            tags: [],
+            distanceKm: 1,
+            phone: extra.phone ?? "",
+            photoUrl: "",
+            packages: [],
+            minPrice: 0,
+            availableWeekdays: [0, 1, 2, 3, 4, 5, 6],
+            unavailableDates: [],
+          });
+        }
         return successResult(response.user);
       }
     } catch (e) {
@@ -169,7 +205,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, isAuthenticated, login, register, logout }}
+      value={{ user, profile, profileLoaded, isAuthenticated, login, register, logout }}
     >
       {children}
     </AuthContext.Provider>

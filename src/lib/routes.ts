@@ -3,9 +3,16 @@ export const ROUTES = {
   search: "/Customer/SearchMenu",
   bookings: "/Customer/Bookings",
   profile: "/Customer/UserProfile",
+  notifications: "/Customer/Notifications",
   service: (id: string) => `/Customer/ServiceInfo?id=${id}`,
   request: (id: string, packageId: string, date: string) =>
     `/Customer/RequestInfo?id=${id}&packageId=${packageId}&date=${date}`,
   reviews: (id: string) => `/Reviews?id=${id}`,
   chat: (bookingId: string) => `/Chat?bookingId=${bookingId}`,
+  worker: {
+    dashboard: "/Worker/Dashboard",
+    bookings: "/Worker/Bookings",
+    services: "/Worker/ServiceInfo",
+    profile: "/Worker/UserProfile",
+  },
 } as const;

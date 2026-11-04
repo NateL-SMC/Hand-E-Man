@@ -17,6 +17,10 @@ export type Handyman = {
   minPrice: number;
   availableWeekdays: number[]; // 0 = Sun ... 6 = Sat
   unavailableDates: string[]; // "YYYY-MM-DD"
+  // worker-side additions
+  ownerUid?: string; // auth uid of the worker who controls this profile
+  status?: "available" | "on_job" | "unavailable";
+  bio?: string;
 };
 
 export type Review = { id: string; author: string; rating: number; text: string; createdAt: number };
@@ -26,7 +30,10 @@ export type BookingStatus = "pending" | "upcoming" | "ongoing" | "completed" | "
 export type Booking = {
   id: string;
   customerId: string;
+  customerName?: string;
+  customerPhone?: string;
   handymanId: string;
+  handymanUid?: string; // auth uid of the worker (used by rules + worker queries)
   handymanName: string;
   handymanPhone: string;
   handymanPhoto?: string;
@@ -44,6 +51,9 @@ export type Booking = {
   vat: number;
   total: number;
   createdAt: number;
+  startedAt?: number;
+  completedAt?: number;
+  cancelledBy?: "worker" | "customer";
 };
 
 export type Message = { id: string; senderId: string; text: string; createdAt: number };

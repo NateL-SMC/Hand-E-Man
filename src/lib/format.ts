@@ -22,3 +22,12 @@ export const shortDate = (ms: number) => {
 };
 
 export const dayLabel = (d: Date) => DAYS[d.getDay()];
+
+export const timeAgo = (ms: number) => {
+  const m = Math.max(0, Math.floor((Date.now() - ms) / 60000));
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min${m === 1 ? "" : "s"} ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} hr${h === 1 ? "" : "s"} ago`;
+  return `${Math.floor(h / 24)}d ago`;
+};

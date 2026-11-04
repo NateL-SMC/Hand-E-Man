@@ -55,6 +55,9 @@ export default function RequestService() {
       }
       await createBooking({
         customerId: user.uid,
+        customerName: profile?.username ?? user.displayName ?? "Customer",
+        customerPhone: profile?.phone ?? "",
+        handymanUid: h.ownerUid ?? h.id,
         handymanId: h.id, handymanName: h.name, handymanPhone: h.phone,
         ...(h.photoUrl ? { handymanPhoto: h.photoUrl } : {}),
         category: h.category, packageTitle: pkg.title,

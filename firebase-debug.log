@@ -1,0 +1,69 @@
+[debug] [2026-10-30T20:48:07.531Z] ----------------------------------------------------------------------
+[debug] [2026-10-30T20:48:07.534Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\lopez\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init functions
+[debug] [2026-10-30T20:48:07.534Z] CLI Version:   15.34.2
+[debug] [2026-10-30T20:48:07.535Z] Platform:      win32
+[debug] [2026-10-30T20:48:07.535Z] Node Version:  v24.19.0
+[debug] [2026-10-30T20:48:07.535Z] Detected Agent: unknown
+[debug] [2026-10-30T20:48:07.535Z] Time:          Sat Oct 31 2026 04:48:07 GMT+0800 (Philippine Standard Time)
+[debug] [2026-10-30T20:48:07.535Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  C:\Users\lopez\OneDrive\Desktop\HandEMan\HandEmanFinal
+
+Before we get started, keep in mind:
+
+  * You are initializing within an existing Firebase project directory
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2026-10-30T20:48:34.656Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-30T20:48:34.657Z] > authorizing via signed-in user (nateethangalarosa.lopez@my.smciligan.edu.ph)
+[debug] [2026-10-30T20:48:34.675Z] Checked if tokens are valid: true, expires at: 1793395465949
+[debug] [2026-10-30T20:48:34.676Z] Checked if tokens are valid: true, expires at: 1793395465949
+[debug] [2026-10-30T20:48:34.678Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/appdevactivity-1578e [none]
+[debug] [2026-10-30T20:48:35.182Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/appdevactivity-1578e 200
+[debug] [2026-10-30T20:48:35.183Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/appdevactivity-1578e {"projectId":"appdevactivity-1578e","projectNumber":"1037488049381","displayName":"AppDevActivity","name":"projects/appdevactivity-1578e","resources":{"hostingSite":"appdevactivity-1578e"},"state":"ACTIVE","labels":{"firebase":"enabled"},"etag":"1_c0f8c958-4c7b-4cb7-ad54-40763cdee3d1"}
+[info] i  Using project appdevactivity-1578e (AppDevActivity) . 
+[info] 
+=== Functions Setup
+[debug] [2026-10-30T20:48:35.195Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-30T20:48:35.195Z] > authorizing via signed-in user (nateethangalarosa.lopez@my.smciligan.edu.ph)
+[debug] [2026-10-30T20:48:35.196Z] [iam] checking project appdevactivity-1578e for permissions ["firebase.projects.get"]
+[debug] [2026-10-30T20:48:35.197Z] Checked if tokens are valid: true, expires at: 1793395465949
+[debug] [2026-10-30T20:48:35.197Z] Checked if tokens are valid: true, expires at: 1793395465949
+[debug] [2026-10-30T20:48:35.197Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/appdevactivity-1578e:testIamPermissions [none]
+[debug] [2026-10-30T20:48:35.197Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/appdevactivity-1578e:testIamPermissions  x-goog-user-project=appdevactivity-1578e
+[debug] [2026-10-30T20:48:35.197Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/appdevactivity-1578e:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2026-10-30T20:48:36.439Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/appdevactivity-1578e:testIamPermissions 200
+[debug] [2026-10-30T20:48:36.439Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/appdevactivity-1578e:testIamPermissions {"permissions":["firebase.projects.get"]}
+[info] 
+Detected existing codebase(s): default, handeman
+
+[info] 
+Overwriting codebase handeman...
+
+[debug] [2026-10-30T20:48:59.714Z] ExitPromptError: User force closed the prompt with SIGINT
+    at Interface.sigint (C:\Users\lopez\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\@inquirer\core\dist\commonjs\lib\create-prompt.js:101:37)
+    at Interface.emit (node:events:509:28)
+    at [_ttyWrite] [as _ttyWrite] (node:internal/readline/interface:1327:18)
+    at ReadStream.onkeypress (node:internal/readline/interface:284:20)
+    at ReadStream.emit (node:events:521:24)
+    at emitKeys (node:internal/readline/utils:371:14)
+    at emitKeys.next (<anonymous>)
+    at ReadStream.onData (node:internal/readline/emitKeypressEvents:64:36)
+    at ReadStream.emit (node:events:509:28)
+    at addChunk (node:internal/streams/readable:563:12)
+[error] 
+[error] Error: An unexpected error has occurred.
