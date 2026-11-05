@@ -49,24 +49,12 @@ export default function SignIn() {
       <AuthBackground variant="login" />
 
       <View className="flex-1 justify-center px-10 pb-16">
-        <Text className="font-mono text-[44px] font-bold text-[#F59E0B] mb-14">
-          Login
-        </Text>
+        <Text className="font-mono text-[44px] font-bold text-[#F59E0B] mb-14">Login</Text>
 
         {/* Firebase signs in with email, so this field is Email (design said Username) */}
-        <AuthField
-          label="Email"
-          keyboardType="email-address"
-          onChangeText={(v) => (emailRef.current = v)}
-          shadow
-        />
+        <AuthField label="Email" keyboardType="email-address" onChangeText={(v) => (emailRef.current = v)} shadow />
         <View className="h-2" />
-        <AuthField
-          label="Password"
-          secure
-          onChangeText={(v) => (passwordRef.current = v)}
-          shadow
-        />
+        <AuthField label="Password" secure onChangeText={(v) => (passwordRef.current = v)} shadow />
 
         <Pressable
           onPress={handleSignIn}
@@ -76,16 +64,12 @@ export default function SignIn() {
           {loading ? (
             <ActivityIndicator color="#0F172A" />
           ) : (
-            <Text className="font-mono text-xl font-bold text-[#0F172A]">
-              Login
-            </Text>
+            <Text className="font-mono text-xl font-bold text-[#0F172A]">Login</Text>
           )}
         </Pressable>
 
         <View className="flex-row justify-center items-center mt-4">
-          <Text className="font-mono text-[11px] text-[#0F172A]">
-            Don't have an account?{" "}
-          </Text>
+          <Text className="font-mono text-[11px] text-[#0F172A]">Don't have an account? </Text>
           <Pressable onPress={() => router.push("/sign-up")}>
             <Text className="font-mono text-[11px] text-red-600">Sign Up</Text>
           </Pressable>

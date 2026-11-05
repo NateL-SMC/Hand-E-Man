@@ -1,3 +1,6 @@
+export type Coords = { latitude: number; longitude: number };
+export type TrackStage = "accepted" | "on_the_way" | "arrived" | "finished";
+
 export type Package = { id: string; title: string; price: number; description: string };
 
 export type Handyman = {
@@ -21,9 +24,11 @@ export type Handyman = {
   ownerUid?: string; // auth uid of the worker who controls this profile
   status?: "available" | "on_job" | "unavailable";
   bio?: string;
+  coords?: Coords;
+  locationLabel?: string;
 };
 
-export type Review = { id: string; author: string; rating: number; text: string; createdAt: number };
+export type Review = { id: string; author: string; authorId?: string; rating: number; text: string; createdAt: number };
 
 export type BookingStatus = "pending" | "upcoming" | "ongoing" | "completed" | "cancelled";
 
@@ -54,6 +59,25 @@ export type Booking = {
   startedAt?: number;
   completedAt?: number;
   cancelledBy?: "worker" | "customer";
+  acceptedAt?: number;
+  arrivedAt?: number;
+  trackStage?: TrackStage;
+  destination?: Coords; // where the worker is heading (geocoded from the job address)
+  workerLocation?: Coords & { updatedAt: number }; // live position, written by the worker's phone
 };
 
 export type Message = { id: string; senderId: string; text: string; createdAt: number };
+
+// One chat room per customer <-> worker pair (id = `${customerId}_${handymanUid}`)
+export type ChatRoom = {
+  id: string;
+  customerId: string;
+  customerName?: string;
+  customerPhone?: string;
+  handymanUid: string;
+  handymanId?: string;
+  handymanName: string;
+  handymanPhone?: string;
+  lastMessage?: string;
+  updatedAt?: number;
+};

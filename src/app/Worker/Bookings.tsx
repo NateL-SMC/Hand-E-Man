@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import WorkerNavbar from "../../components/WorkerNavbar";
 import { IconBtn } from "../../components/ui";
 import { useAuth } from "../../context/authContext";
-import { peso, prettyDate, timeAgo } from "../../lib/format";
+import { openChat } from "../../lib/chat";
+import { confirmDialog, showAlert } from "../../lib/dialog";
+import { peso, prettyDate, timeAgo, toISO } from "../../lib/format";
 import { ROUTES } from "../../lib/routes";
 import { useNavSpace } from "../../lib/useNavSpace";
 import {
-  acceptBooking, cancelBooking, completeBooking, declineBooking, setWorkStatus, startBooking,
+  acceptBooking, cancelBooking, completeBooking, declineBooking, releaseIfIdle, setWorkStatus, startBooking,
   watchHandyman, watchWorkerBookings, type WorkStatus,
 } from "../../lib/worker";
 import type { Booking, BookingStatus, Handyman } from "../../lib/types";
@@ -27,12 +29,9 @@ const STATUS_UI: Record<WorkStatus, { label: string; pill: string; text: string 
   unavailable: { label: "UNAVAILABLE", pill: "bg-slate-200", text: "text-slate-600" },
 };
 
-const confirm = (title: string, msg: string, onYes: () => void) =>
-  Alert.alert(title, msg, [{ text: "No", style: "cancel" }, { text: "Yes", style: "destructive", onPress: onYes }]);
-
 function Btn({ title, onPress, tone }: { title: string; onPress: () => void; tone: "green" | "red" | "amber" | "navy" | "white" }) {
   const bg = { green: "bg-[#10B981]", red: "bg-[#EF4444]", amber: "bg-[#F59E0B]", navy: "bg-[#0F172A]", white: "bg-white border border-[#E2E8F0]" }[tone];
-  const text = tone === "white" ? "text-[#0F172A]" : tone === "amber" ? "text-[#0F172A]" : "text-white";
+  const text = tone === "white" || tone === "amber" ? "text-[#0F172A]" : "text-white";
   return (
     <Pressable onPress={onPress} className={`flex-1 ${bg} rounded-lg py-2.5 items-center mx-1`}>
       <Text className={`${text} text-sm font-bold`}>{title}</Text>
@@ -40,15 +39,15 @@ function Btn({ title, onPress, tone }: { title: string; onPress: () => void; ton
   );
 }
 
-function JobCard({
-  b, onAccept, onDecline, onStart, onComplete, onCancel, onChat, onCall,
-}: {
-  b: Booking; onAccept: () => void; onDecline: () => void; onStart: () => void;
+type Actions = {
+  onOpen?: () => void; onAccept: () => void; onDecline: () => void; onStart: () => void;
   onComplete: () => void; onCancel: () => void; onChat: () => void; onCall: () => void;
-}) {
+};
+
+function JobCard({ b, a }: { b: Booking; a: Actions }) {
   const live = b.status === "upcoming" || b.status === "ongoing";
   return (
-    <View className="bg-white border border-[#E2E8F0] rounded-2xl p-4 mb-3">
+    <Pressable onPress={a.onOpen} disabled={!a.onOpen} className="bg-white border border-[#E2E8F0] rounded-2xl p-4 mb-3">
       <View className="flex-row justify-between items-start">
         <View className="flex-1 pr-2">
           <Text className="font-bold text-[#0F172A]">{b.customerName ?? "Customer"}</Text>
@@ -61,21 +60,22 @@ function JobCard({
         <View className="flex-1 pr-2">
           <Text className="text-xs font-bold text-[#0F172A]">{prettyDate(b.date)}, {b.time}</Text>
           <Text className="text-[11px] text-[#475569] mt-0.5" numberOfLines={2}>{b.address}</Text>
+          {live && <Text className="text-[10px] text-blue-600 mt-1">Tap to open live tracking</Text>}
         </View>
         {live && (
           <View className="flex-row">
-            <IconBtn name="call-outline" onPress={onCall} />
-            <IconBtn name="chatbubble-outline" dark onPress={onChat} />
+            <IconBtn name="call-outline" onPress={a.onCall} />
+            <IconBtn name="chatbubble-outline" dark onPress={a.onChat} />
           </View>
         )}
       </View>
 
       <View className="flex-row mt-3 -mx-1">
-        {b.status === "pending" && (<><Btn title="Decline" tone="red" onPress={onDecline} /><Btn title="Confirm" tone="green" onPress={onAccept} /></>)}
-        {b.status === "upcoming" && (<><Btn title="Cancel" tone="white" onPress={onCancel} /><Btn title="Start Job" tone="amber" onPress={onStart} /></>)}
-        {b.status === "ongoing" && (<><Btn title="Cancel" tone="white" onPress={onCancel} /><Btn title="Complete Job" tone="green" onPress={onComplete} /></>)}
+        {b.status === "pending" && (<><Btn title="Decline" tone="red" onPress={a.onDecline} /><Btn title="Confirm" tone="green" onPress={a.onAccept} /></>)}
+        {b.status === "upcoming" && (<><Btn title="Cancel" tone="white" onPress={a.onCancel} /><Btn title="Start Trip" tone="amber" onPress={a.onStart} /></>)}
+        {b.status === "ongoing" && (<><Btn title="Cancel" tone="white" onPress={a.onCancel} /><Btn title="Complete Job" tone="green" onPress={a.onComplete} /></>)}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -122,16 +122,40 @@ export default function WorkerBookings() {
   const count = (s: BookingStatus) => items.filter((b) => b.status === s).length;
 
   const run = async (fn: () => Promise<unknown>) => {
-    try { await fn(); } catch (e: any) { Alert.alert("Error", e.message ?? "Something went wrong"); }
+    try { await fn(); } catch (e: any) { showAlert("Something went wrong", e.message ?? "Please try again."); }
   };
-  // back to "available" once the last running job ends (unless the worker chose unavailable)
-  const freeUpIfIdle = (finishedId: string) => {
-    const stillBusy = items.some((x) => x.status === "ongoing" && x.id !== finishedId);
-    if (handymanId && h?.status === "on_job" && !stillBusy) setWorkStatus(handymanId, "available");
-  };
+  const release = async () => { if (user && handymanId) await releaseIfIdle(user.uid, handymanId); };
 
-  const call = (b: Booking) =>
-    b.customerPhone ? Linking.openURL(`tel:${b.customerPhone}`) : Alert.alert("No phone number", "This customer didn't leave a number.");
+  // ---- actions (all of them write to the same booking doc the customer is watching) ----
+  const accept = (b: Booking) => run(() => acceptBooking(b, user!.uid));
+  const decline = (b: Booking) => confirmDialog("Decline request?", "The customer will be notified.", () => run(() => declineBooking(b)));
+  const start = (b: Booking) => run(async () => {
+    await startBooking(b);
+    if (handymanId) await setWorkStatus(handymanId, "on_job");
+    router.push(ROUTES.tracking(b.id));
+  });
+  const complete = (b: Booking) =>
+    confirmDialog("Complete job?", "This marks it as done and paid.", () => run(async () => { await completeBooking(b); await release(); }), false);
+  const cancel = (b: Booking) =>
+    confirmDialog("Cancel this job?", "The customer will be notified.", () => run(async () => { await cancelBooking(b); await release(); }));
+  const call = (b: Booking) => (b.customerPhone ? Linking.openURL(`tel:${b.customerPhone}`) : showAlert("No phone number", "This customer didn't leave a number."));
+  const chat = (b: Booking) => openChat(router, b).catch((e) => showAlert("Couldn't open chat", e.message));
+
+  const actions = (b: Booking): Actions => ({
+    onOpen: b.status === "upcoming" || b.status === "ongoing" ? () => router.push(ROUTES.tracking(b.id)) : undefined,
+    onAccept: () => accept(b), onDecline: () => decline(b), onStart: () => start(b),
+    onComplete: () => complete(b), onCancel: () => cancel(b), onChat: () => chat(b), onCall: () => call(b),
+  });
+
+  // upcoming is split like the design: "Scheduled For Today" first
+  const todayIso = toISO(new Date());
+  const sections =
+    tab === "upcoming"
+      ? [
+          { title: "Scheduled For Today", items: list.filter((b) => b.date <= todayIso) },
+          { title: "Later", items: list.filter((b) => b.date > todayIso) },
+        ]
+      : [{ title: tab === "pending" ? "Waiting for Confirmation" : tab === "ongoing" ? "Current Job" : "Completed Jobs", items: list }];
 
   const status = STATUS_UI[h?.status ?? "unavailable"];
 
@@ -183,29 +207,18 @@ export default function WorkerBookings() {
             <Text className="text-xs text-[#475569]">{shownPopup.packageTitle}</Text>
             <Text className="text-xs font-bold text-[#0F172A] mt-0.5">{shownPopup.address}</Text>
             <View className="flex-row mt-3 -mx-1">
-              <Btn title="Decline" tone="white" onPress={() => { run(() => declineBooking(shownPopup.id)); setPopup(null); }} />
-              <Btn title="Accept" tone="navy" onPress={() => { run(() => acceptBooking(shownPopup.id)); setPopup(null); }} />
+              <Btn title="Decline" tone="white" onPress={() => { run(() => declineBooking(shownPopup)); setPopup(null); }} />
+              <Btn title="Accept" tone="navy" onPress={() => { accept(shownPopup); setPopup(null); }} />
             </View>
           </View>
         )}
 
-        <Text className="text-base font-extrabold text-[#0F172A] mt-5 mb-3">
-          {tab === "pending" ? "Waiting for Confirmation" : tab === "upcoming" ? "Upcoming Jobs" : tab === "ongoing" ? "Current Job" : "Completed Jobs"}
-        </Text>
-
-        {list.length === 0 && <Text className="text-[#475569] text-center mt-6">Nothing here yet.</Text>}
-        {list.map((b) => (
-          <JobCard
-            key={b.id}
-            b={b}
-            onAccept={() => run(() => acceptBooking(b.id))}
-            onDecline={() => confirm("Decline request?", "The customer will be notified.", () => run(() => declineBooking(b.id)))}
-            onStart={() => run(async () => { await startBooking(b.id); if (handymanId) await setWorkStatus(handymanId, "on_job"); })}
-            onComplete={() => confirm("Complete job?", "Marks it as done and paid.", () => run(async () => { await completeBooking(b.id); freeUpIfIdle(b.id); }))}
-            onCancel={() => confirm("Cancel this job?", "The customer will be notified.", () => run(async () => { await cancelBooking(b.id); freeUpIfIdle(b.id); }))}
-            onChat={() => router.push(ROUTES.chat(b.id))}
-            onCall={() => call(b)}
-          />
+        {list.length === 0 && <Text className="text-[#475569] text-center mt-8">Nothing here yet.</Text>}
+        {sections.filter((s) => s.items.length > 0).map((s) => (
+          <View key={s.title}>
+            <Text className="text-base font-extrabold text-[#0F172A] mt-5 mb-3">{s.title}</Text>
+            {s.items.map((b) => <JobCard key={b.id} b={b} a={actions(b)} />)}
+          </View>
         ))}
       </ScrollView>
 

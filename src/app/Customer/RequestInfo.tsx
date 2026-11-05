@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,6 +14,9 @@ import type { Handyman } from "../../lib/types";
 import CustomerNavbar from "../../components/CustomerNavbar";
 import { useNavSpace } from "../../lib/useNavSpace";
 import { ROUTES } from "../../lib/routes";
+import { showAlert } from "../../lib/dialog";
+import { geocode } from "../../lib/geo";
+import { sendPush } from "../../lib/push";
 
 export default function RequestService() {
   const { id, packageId, date } = useLocalSearchParams<{ id: string; packageId: string; date: string }>();
@@ -44,20 +47,23 @@ export default function RequestService() {
 
   const confirm = async () => {
     if (!user) return;
-    if (address === DEFAULT_ADDRESS) return Alert.alert("Add an address", "Please set the service location first.");
+    if (address === DEFAULT_ADDRESS) return showAlert("Add an address", "Please set the service location first.");
     setBusy(true);
     try {
       let paid = false, orderId: string | undefined;
       if (method === "paypal") {
         const r = await payWithPaypalSandbox(t.total);
-        if (!r.ok) { Alert.alert("Payment cancelled"); return; }
+        if (!r.ok) { showAlert("Payment cancelled"); return; }
         paid = true; orderId = r.orderId;
       }
+      // where the worker has to go: the typed address if we can find it, otherwise the customer's saved GPS spot
+      const destination = (await geocode(address))?.coords ?? profile?.coords;
       await createBooking({
         customerId: user.uid,
         customerName: profile?.username ?? user.displayName ?? "Customer",
         customerPhone: profile?.phone ?? "",
         handymanUid: h.ownerUid ?? h.id,
+        ...(destination ? { destination } : {}),
         handymanId: h.id, handymanName: h.name, handymanPhone: h.phone,
         ...(h.photoUrl ? { handymanPhoto: h.photoUrl } : {}),
         category: h.category, packageTitle: pkg.title,
@@ -66,9 +72,10 @@ export default function RequestService() {
         ...(orderId ? { paypalOrderId: orderId } : {}),
         ...t, createdAt: Date.now(),
       });
+      sendPush(h.ownerUid, "New job request", `${profile?.username ?? "A customer"} • ${pkg.title}`, { type: "new_request", route: ROUTES.worker.bookings });
       router.replace(ROUTES.bookings);
     } catch (e: any) {
-      Alert.alert("Booking failed", e.message ?? "Please try again.");
+      showAlert("Booking failed", e.message ?? "Please try again.");
     } finally {
       setBusy(false);
     }

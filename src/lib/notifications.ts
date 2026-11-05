@@ -5,6 +5,8 @@ import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import Constants from "expo-constants";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../../firebaseConfig";
 import { updateMyProfile } from "./api";
 
 if (Platform.OS !== "web") {
@@ -40,6 +42,7 @@ export async function registerForPush(uid: string) {
     const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? (Constants as any).easConfig?.projectId;
     const token = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
     await updateMyProfile(uid, { expoPushToken: token });
+    await setDoc(doc(db, "pushTokens", uid), { token }); // readable by other signed-in users so their phone can send you a push
   } catch (e) {
     console.log("Push registration skipped:", e);
   }

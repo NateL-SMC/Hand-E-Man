@@ -5,7 +5,7 @@ import { Avatar, Stars } from "./ui";
 import type { Handyman } from "../lib/types";
 import { ROUTES } from "../lib/routes";
 
-export default function HandymanRow({ h }: { h: Handyman }) {
+export default function HandymanRow({ h, km }: { h: Handyman; km?: number }) {
   const router = useRouter();
   return (
     <Pressable
@@ -23,7 +23,7 @@ export default function HandymanRow({ h }: { h: Handyman }) {
         </View>
       </View>
       <View className="items-end">
-        <Text className="text-xs font-bold text-blue-600">{h.distanceKm.toFixed(1)} km</Text>
+        <Text className="text-xs font-bold text-blue-600">{(km ?? h.distanceKm).toFixed(1)} km</Text>
         <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
       </View>
     </Pressable>

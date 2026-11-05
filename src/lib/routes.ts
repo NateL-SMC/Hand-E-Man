@@ -8,7 +8,8 @@ export const ROUTES = {
   request: (id: string, packageId: string, date: string) =>
     `/Customer/RequestInfo?id=${id}&packageId=${packageId}&date=${date}`,
   reviews: (id: string) => `/Reviews?id=${id}`,
-  chat: (bookingId: string) => `/Chat?bookingId=${bookingId}`,
+  chat: (chatId: string) => `/Chat?chatId=${chatId}`,
+  tracking: (bookingId: string) => `/Tracking?bookingId=${bookingId}`,
   worker: {
     dashboard: "/Worker/Dashboard",
     bookings: "/Worker/Bookings",

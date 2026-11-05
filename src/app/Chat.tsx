@@ -5,36 +5,38 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Header from "../components/Header";
 import { useAuth } from "../context/authContext";
-import { fetchBooking, sendMessage, watchMessages } from "../lib/api";
-import type { Booking, Message } from "../lib/types";
+import { fetchChat, sendMessage, watchMessages } from "../lib/chat";
+import { showAlert } from "../lib/dialog";
+import type { ChatRoom, Message } from "../lib/types";
 
+// One room per customer <-> worker pair; every job between them shares this thread.
 export default function Chat() {
-  const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
+  const { chatId } = useLocalSearchParams<{ chatId: string }>();
   const router = useRouter();
   const { user } = useAuth();
   const { bottom } = useSafeAreaInsets();
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const [chat, setChat] = useState<ChatRoom | null>(null);
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const listRef = useRef<FlatList<Message>>(null);
 
-  // The "other person" depends on who is looking: customers see the handyman, workers see the customer.
-  const iAmCustomer = !!booking && user?.uid === booking.customerId;
-  const other = iAmCustomer
-    ? { name: booking?.handymanName, phone: booking?.handymanPhone }
-    : { name: booking?.customerName ?? "Customer", phone: booking?.customerPhone };
-
   useEffect(() => {
-    if (!bookingId) return;
-    fetchBooking(bookingId).then(setBooking);
-    return watchMessages(bookingId, setMsgs);
-  }, [bookingId]);
+    if (!chatId) return;
+    fetchChat(chatId).then(setChat).catch(() => {});
+    return watchMessages(chatId, setMsgs);
+  }, [chatId]);
+
+  // customers see the handyman, workers see the customer
+  const iAmCustomer = !!chat && user?.uid === chat.customerId;
+  const other = iAmCustomer
+    ? { name: chat?.handymanName, phone: chat?.handymanPhone }
+    : { name: chat?.customerName ?? "Customer", phone: chat?.customerPhone };
 
   const send = async () => {
     const t = text.trim();
-    if (!t || !user || !bookingId) return;
+    if (!t || !user || !chatId) return;
     setText("");
-    await sendMessage(bookingId, user.uid, t);
+    try { await sendMessage(chatId, user.uid, t); } catch (e: any) { showAlert("Couldn't send", e.message); }
   };
 
   return (
@@ -43,7 +45,7 @@ export default function Chat() {
         <View className="flex-row items-center">
           <Pressable onPress={() => router.back()} hitSlop={10}><Ionicons name="arrow-back" size={24} color="#0F172A" /></Pressable>
           <View className="flex-1 flex-row items-center justify-between bg-[#0F172A] rounded-full pl-6 pr-2 py-2 ml-4">
-            <Text className="text-[#F59E0B] text-xl font-extrabold">{other.name ?? "Chat"}</Text>
+            <Text className="text-[#F59E0B] text-xl font-extrabold" numberOfLines={1}>{other.name ?? "Chat"}</Text>
             <Pressable
               onPress={() => other.phone && Linking.openURL(`tel:${other.phone}`)}
               className="w-8 h-8 rounded-full border border-[#F59E0B] items-center justify-center"
@@ -60,6 +62,7 @@ export default function Chat() {
         keyExtractor={(m) => m.id}
         contentContainerClassName="px-5 pt-6 pb-4"
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+        ListEmptyComponent={<Text className="text-center text-[#94A3B8] mt-10">Say hi 👋</Text>}
         renderItem={({ item }) => {
           const mine = item.senderId === user?.uid;
           return (

@@ -1,33 +1,38 @@
 import { useEffect, useState } from "react";
-import { Alert, Linking, ScrollView, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import CustomerNavbar from "../../components/CustomerNavbar";
 import Header from "../../components/Header";
 import { Avatar, IconBtn } from "../../components/ui";
 import { useAuth } from "../../context/authContext";
 import { watchBookings } from "../../lib/api";
+import { openChat } from "../../lib/chat";
+import { showAlert } from "../../lib/dialog";
 import { prettyDate } from "../../lib/format";
-import type { Booking, BookingStatus } from "../../lib/types";
-import CustomerNavbar from "../../components/CustomerNavbar";
-import { useNavSpace } from "../../lib/useNavSpace";
 import { ROUTES } from "../../lib/routes";
+import { useNavSpace } from "../../lib/useNavSpace";
+import type { Booking, BookingStatus } from "../../lib/types";
 
 const SECTIONS: { key: BookingStatus; title: string; color: string }[] = [
   { key: "ongoing", title: "Ongoing", color: "text-emerald-500" },
   { key: "pending", title: "Pending", color: "text-amber-500" },
   { key: "upcoming", title: "Upcoming", color: "text-red-500" },
 ];
-// order of the list sections in the design
-const LIST_ORDER: BookingStatus[] = ["ongoing", "upcoming", "pending"];
+// order of the list sections (history last)
+const LIST_ORDER: BookingStatus[] = ["ongoing", "upcoming", "pending", "completed"];
 
 export default function Bookings() {
   const { user } = useAuth();
-  const navSpace = useNavSpace();
   const router = useRouter();
+  const navSpace = useNavSpace();
   const [items, setItems] = useState<Booking[]>([]);
 
   useEffect(() => (user ? watchBookings(user.uid, setItems) : undefined), [user?.uid]);
 
-  const by = (s: BookingStatus) => items.filter((b) => b.status === s).sort((a, b) => a.date.localeCompare(b.date));
+  const by = (s: BookingStatus) =>
+    items.filter((b) => b.status === s).sort((a, b) => (s === "completed" ? (b.completedAt ?? 0) - (a.completedAt ?? 0) : a.date.localeCompare(b.date)));
+
+  const chat = (b: Booking) => openChat(router, b).catch((e) => showAlert("Couldn't open chat", e.message));
 
   return (
     <View className="flex-1 bg-[#F8FAFC]" style={{ paddingBottom: navSpace }}>
@@ -47,28 +52,40 @@ export default function Bookings() {
           <Text className="text-[#475569] text-center mt-10">No bookings yet. Find a handyman in Search!</Text>
         )}
         {LIST_ORDER.map((status) => {
-          const list = by(status);
+          const list = by(status).slice(0, status === "completed" ? 8 : 50);
           if (!list.length) return null;
           return (
             <View key={status}>
-              <Text className="text-base font-bold text-[#0F172A] mt-5 mb-2 capitalize">{status}</Text>
-              {list.map((b) => (
-                <View key={b.id} className="flex-row items-center bg-white border border-[#E2E8F0] rounded-xl p-2.5 mb-2">
-                  <Avatar uri={b.handymanPhoto} size={44} />
-                  <View className="flex-1 ml-3">
-                    <Text className="font-bold text-[#0F172A] text-sm">{b.handymanName}</Text>
-                    <Text className="text-xs text-[#475569]">{b.category}</Text>
-                    {status !== "ongoing" && (
-                      <Text className="text-[10px] text-orange-600">{prettyDate(b.date)} • {b.time}</Text>
+              <Text className="text-base font-bold text-[#0F172A] mt-5 mb-2 capitalize">{status === "completed" ? "Completed" : status}</Text>
+              {list.map((b) => {
+                const trackable = status === "ongoing" || status === "upcoming";
+                return (
+                  <Pressable
+                    key={b.id}
+                    disabled={!trackable}
+                    onPress={() => router.push(ROUTES.tracking(b.id))}
+                    className="flex-row items-center bg-white border border-[#E2E8F0] rounded-xl p-2.5 mb-2"
+                  >
+                    <Avatar uri={b.handymanPhoto} size={44} />
+                    <View className="flex-1 ml-3">
+                      <Text className="font-bold text-[#0F172A] text-sm">{b.handymanName}</Text>
+                      <Text className="text-xs text-[#475569]">{b.category}</Text>
+                      {status !== "ongoing" && <Text className="text-[10px] text-orange-600">{prettyDate(b.date)} • {b.time}</Text>}
+                    </View>
+                    {status === "completed" ? (
+                      <Pressable onPress={() => router.push(ROUTES.reviews(b.handymanId))} className="bg-[#F59E0B] rounded-lg px-3 py-2">
+                        <Text className="text-xs font-bold text-[#0F172A]">Review</Text>
+                      </Pressable>
+                    ) : (
+                      <>
+                        <IconBtn name="call-outline" onPress={() => (b.handymanPhone ? Linking.openURL(`tel:${b.handymanPhone}`) : showAlert("No phone number"))} />
+                        <IconBtn name="chatbubble-outline" dark onPress={() => chat(b)} />
+                        {status === "ongoing" && <IconBtn name="location" blue onPress={() => router.push(ROUTES.tracking(b.id))} />}
+                      </>
                     )}
-                  </View>
-                  <IconBtn name="call-outline" onPress={() => Linking.openURL(`tel:${b.handymanPhone}`)} />
-                  <IconBtn name="chatbubble-outline" dark onPress={() => router.push(ROUTES.chat(b.id))} />
-                  {status === "ongoing" && (
-                    <IconBtn name="location" blue onPress={() => Alert.alert("Coming soon", "Live location tracking will be added with GPS.")} />
-                  )}
-                </View>
-              ))}
+                  </Pressable>
+                );
+              })}
             </View>
           );
         })}

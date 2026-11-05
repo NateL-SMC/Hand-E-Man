@@ -17,6 +17,9 @@ const tabs = [
   },
 ] as const;
 
+// CHANGED: pages reached from Search keep the Search tab lit
+const SEARCH_FLOW = ["/Customer/ServiceInfo", "/Customer/RequestInfo", "/Customer/Notifications"];
+
 export default function CustomerNavbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -29,7 +32,9 @@ export default function CustomerNavbar() {
     >
       <View className="h-[63px] flex-row items-center justify-around">
         {tabs.map((tab) => {
-          const isActive = pathname === tab.route;
+          const isActive =
+            pathname === tab.route ||
+            (tab.label === "Search" && SEARCH_FLOW.includes(pathname));
           const color = isActive ? "#D97706" : "#94A3B8";
 
           return (

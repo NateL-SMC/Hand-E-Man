@@ -4,7 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, Chip, Stars } from "../../components/ui";
+import { useAuth } from "../../context/authContext";
 import { fetchHandyman, fetchReviews } from "../../lib/api";
+import { toggleFavorite } from "../../lib/social";
 import { dayLabel, peso, shortDate, toISO } from "../../lib/format";
 import type { Handyman, Review } from "../../lib/types";
 import CustomerNavbar from "../../components/CustomerNavbar";
@@ -20,7 +22,7 @@ export default function ServiceInfo() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [pkgId, setPkgId] = useState<string>();
   const [date, setDate] = useState<string>();
-  const [fav, setFav] = useState(false);
+  const { user, profile } = useAuth();
 
   useEffect(() => {
     if (!id) return;
@@ -39,6 +41,7 @@ export default function ServiceInfo() {
 
   const isAvail = (d: Date) => h.availableWeekdays.includes(d.getDay()) && !h.unavailableDates.includes(toISO(d));
   const latest = reviews[0];
+  const fav = !!profile?.favorites?.includes(h.id);
 
   return (
     <View className="flex-1 bg-[#F8FAFC]" style={{ paddingBottom: navSpace }}>
@@ -50,7 +53,7 @@ export default function ServiceInfo() {
             <Pressable onPress={() => router.back()} className="w-8 h-8 rounded-full bg-gray-500/80 items-center justify-center">
               <Ionicons name="arrow-back" size={16} color="#fff" />
             </Pressable>
-            <Pressable onPress={() => setFav(!fav)} className="w-8 h-8 rounded-full bg-gray-500/80 items-center justify-center">
+            <Pressable onPress={() => user && toggleFavorite(user.uid, h.id, !fav)} className="w-8 h-8 rounded-full bg-gray-500/80 items-center justify-center">
               <Ionicons name={fav ? "heart" : "heart-outline"} size={16} color={fav ? "#EF4444" : "#fff"} />
             </Pressable>
           </View>

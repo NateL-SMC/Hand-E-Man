@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import EditModal, { type EditField } from "../../components/EditModal";
@@ -7,6 +7,8 @@ import WorkerNavbar from "../../components/WorkerNavbar";
 import { Button } from "../../components/ui";
 import { useAuth } from "../../context/authContext";
 import { fetchHandyman } from "../../lib/api";
+import { confirmDialog, showAlert } from "../../lib/dialog";
+import { getCurrentPlace } from "../../lib/geo";
 import { CATEGORIES } from "../../lib/constants";
 import { dayLabel, parseISO, peso, toISO } from "../../lib/format";
 import { useNavSpace } from "../../lib/useNavSpace";
@@ -47,6 +49,7 @@ export default function WorkerServiceInfo() {
   const [missing, setMissing] = useState(false);
   const [modal, setModal] = useState<Modal>(null);
   const [saving, setSaving] = useState(false);
+  const [locBusy, setLocBusy] = useState(false);
 
   const load = () => {
     if (!handymanId) return;
@@ -85,12 +88,26 @@ export default function WorkerServiceInfo() {
         ],
       });
       load();
-      Alert.alert("Saved", "Your service profile is updated.");
+      showAlert("Saved", "Your service profile is updated.");
     } catch (e: any) {
-      Alert.alert("Couldn't save", e.message);
+      showAlert("Couldn't save", e.message);
     } finally {
       setSaving(false);
     }
+  };
+
+  // saved immediately (it's a device action, not a form field)
+  const setHere = async () => {
+    if (!handymanId) return;
+    setLocBusy(true);
+    try {
+      const place = await getCurrentPlace();
+      await saveHandyman(handymanId, { coords: place.coords, locationLabel: place.label });
+      load();
+      showAlert("Service location updated", place.label);
+    } catch (e: any) {
+      showAlert("Couldn't get your location", e.message);
+    } finally { setLocBusy(false); }
   };
 
   // ----- modal config -----
@@ -161,7 +178,7 @@ export default function WorkerServiceInfo() {
             {draft.tags.map((t) => (
               <Pressable
                 key={t}
-                onPress={() => Alert.alert("Remove tag?", t, [{ text: "No", style: "cancel" }, { text: "Remove", style: "destructive", onPress: () => set({ tags: draft.tags.filter((x) => x !== t) }) }])}
+                onPress={() => confirmDialog("Remove tag?", t, () => set({ tags: draft.tags.filter((x) => x !== t) }))}
                 className="flex-row items-center border border-[#E2E8F0] bg-white rounded-md px-2 py-1 mr-2 mb-2"
               >
                 <Text className="text-[11px] text-slate-600">{t}</Text>
@@ -170,6 +187,18 @@ export default function WorkerServiceInfo() {
             ))}
             <Pressable onPress={() => setModal({ kind: "tag" })} className="border border-[#E2E8F0] bg-white rounded-md px-2.5 py-1 mb-2">
               <Text className="text-[11px] text-slate-600">+</Text>
+            </Pressable>
+          </View>
+
+          {/* service location: lets customers see a real distance */}
+          <View className="flex-row items-center bg-white border border-[#E2E8F0] rounded-xl p-3 mt-1">
+            <Ionicons name="location" size={18} color="#F59E0B" />
+            <View className="flex-1 ml-2">
+              <Text className="text-xs font-bold text-[#0F172A]">Service location</Text>
+              <Text className="text-[11px] text-[#475569]" numberOfLines={2}>{rawDoc?.locationLabel ?? "Not set yet"}</Text>
+            </View>
+            <Pressable onPress={setHere} disabled={locBusy} className="bg-[#0F172A] rounded-lg px-3 py-2">
+              <Text className="text-white text-[11px] font-bold">{locBusy ? "Locating…" : "Use my location"}</Text>
             </Pressable>
           </View>
 

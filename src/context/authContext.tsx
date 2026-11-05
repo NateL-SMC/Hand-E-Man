@@ -39,6 +39,8 @@ export type UserProfile = {
   role?: "customer" | "handyman" | "admin";
   handymanId?: string; // worker accounts: id of the handymen/{id} doc they control (defaults to their uid)
   expoPushToken?: string;
+  favorites?: string[]; // handymen ids the customer hearted
+  coords?: { latitude: number; longitude: number }; // last picked/GPS location
 };
 
 export type RegisterExtra = Pick<UserProfile, "phone" | "address" | "role">;

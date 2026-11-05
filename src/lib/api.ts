@@ -1,23 +1,13 @@
 import { deleteUser, sendPasswordResetEmail } from "firebase/auth";
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  setDoc,
-  getDocs,
-  onSnapshot,
-  orderBy,
-  query,
-  where,
+  addDoc, collection, deleteDoc, doc, getDoc, setDoc, getDocs, onSnapshot, orderBy, query, where,
 } from "firebase/firestore";
 import { auth, db } from "../../firebaseConfig";
 import type { Booking, Handyman, Message, Review } from "./types";
 
 export async function fetchHandymen(): Promise<Handyman[]> {
   const snap = await getDocs(collection(db, "handymen"));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Handyman);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Handyman));
 }
 
 export async function fetchHandyman(id: string): Promise<Handyman | null> {
@@ -27,7 +17,7 @@ export async function fetchHandyman(id: string): Promise<Handyman | null> {
 
 export async function fetchReviews(handymanId: string): Promise<Review[]> {
   const snap = await getDocs(collection(db, "handymen", handymanId, "reviews"));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Review);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Review));
 }
 
 export async function createBooking(data: Omit<Booking, "id">) {
@@ -37,9 +27,8 @@ export async function createBooking(data: Omit<Booking, "id">) {
 
 export function watchBookings(uid: string, cb: (b: Booking[]) => void) {
   // single where() = no composite index needed
-  return onSnapshot(
-    query(collection(db, "bookings"), where("customerId", "==", uid)),
-    (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking)),
+  return onSnapshot(query(collection(db, "bookings"), where("customerId", "==", uid)), (snap) =>
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Booking)))
   );
 }
 
@@ -48,38 +37,15 @@ export async function fetchBooking(id: string): Promise<Booking | null> {
   return s.exists() ? ({ id: s.id, ...s.data() } as Booking) : null;
 }
 
-export function watchMessages(bookingId: string, cb: (m: Message[]) => void) {
-  return onSnapshot(
-    query(
-      collection(db, "bookings", bookingId, "messages"),
-      orderBy("createdAt"),
-    ),
-    (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Message)),
-  );
-}
-
-export function sendMessage(bookingId: string, senderId: string, text: string) {
-  return addDoc(collection(db, "bookings", bookingId, "messages"), {
-    senderId,
-    text,
-    createdAt: Date.now(),
-  });
-}
-
 export function submitReport(uid: string, message: string) {
-  return addDoc(collection(db, "reports"), {
-    uid,
-    message,
-    createdAt: Date.now(),
-  });
+  return addDoc(collection(db, "reports"), { uid, message, createdAt: Date.now() });
 }
 
 // ---------- account helpers (profile screen) ----------
 export const updateMyProfile = (uid: string, data: Record<string, unknown>) =>
-  setDoc(doc(db, "users", uid), data, { merge: true });
+  setDoc(doc(db, "users", uid), JSON.parse(JSON.stringify(data)), { merge: true });
 
-export const resetPassword = (email: string) =>
-  sendPasswordResetEmail(auth, email);
+export const resetPassword = (email: string) => sendPasswordResetEmail(auth, email);
 
 export async function deleteMyAccount() {
   const u = auth.currentUser;

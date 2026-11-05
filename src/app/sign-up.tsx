@@ -46,11 +46,7 @@ export default function SignUp() {
       passwordRef.current,
       usernameRef.current.trim(),
       "", // no profile URL field in the new design
-      {
-        phone: phoneRef.current.trim(),
-        address: addressRef.current.trim(),
-        role,
-      },
+      { phone: phoneRef.current.trim(), address: addressRef.current.trim(), role },
     );
     setLoading(false);
 
@@ -74,34 +70,13 @@ export default function SignUp() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text className="font-mono text-4xl font-bold text-[#F59E0B] mb-6">
-          Register
-        </Text>
+        <Text className="font-mono text-4xl font-bold text-[#F59E0B] mb-6">Register</Text>
 
-        <AuthField
-          label="Username"
-          onChangeText={(v) => (usernameRef.current = v)}
-        />
-        <AuthField
-          label="Password"
-          secure
-          onChangeText={(v) => (passwordRef.current = v)}
-        />
-        <AuthField
-          label="Email"
-          keyboardType="email-address"
-          onChangeText={(v) => (emailRef.current = v)}
-        />
-        <AuthField
-          label="Contact Number"
-          keyboardType="phone-pad"
-          onChangeText={(v) => (phoneRef.current = v)}
-        />
-        <AuthField
-          label="Address"
-          autoCapitalize="words"
-          onChangeText={(v) => (addressRef.current = v)}
-        />
+        <AuthField label="Username" onChangeText={(v) => (usernameRef.current = v)} />
+        <AuthField label="Password" secure onChangeText={(v) => (passwordRef.current = v)} />
+        <AuthField label="Email" keyboardType="email-address" onChangeText={(v) => (emailRef.current = v)} />
+        <AuthField label="Contact Number" keyboardType="phone-pad" onChangeText={(v) => (phoneRef.current = v)} />
+        <AuthField label="Address" autoCapitalize="words" onChangeText={(v) => (addressRef.current = v)} />
 
         {/* Customer / Handyman toggle */}
         <View
@@ -114,9 +89,7 @@ export default function SignUp() {
               onPress={() => setRole(r)}
               className={`flex-1 h-9 rounded-full items-center justify-center ${role === r ? "bg-[#FBBF24]" : ""}`}
             >
-              <Text className="font-mono text-xs font-bold text-[#0F172A] capitalize">
-                {r}
-              </Text>
+              <Text className="font-mono text-xs font-bold text-[#0F172A] capitalize">{r}</Text>
             </Pressable>
           ))}
         </View>
@@ -129,19 +102,12 @@ export default function SignUp() {
           {loading ? (
             <ActivityIndicator color="#0F172A" />
           ) : (
-            <Text className="font-mono text-xl font-bold text-[#0F172A]">
-              Sign Up
-            </Text>
+            <Text className="font-mono text-xl font-bold text-[#0F172A]">Sign Up</Text>
           )}
         </Pressable>
 
-        <Pressable
-          onPress={() => router.push("/sign-in")}
-          className="mt-4 items-center"
-        >
-          <Text className="font-mono text-[11px] text-red-600">
-            Already have an account?
-          </Text>
+        <Pressable onPress={() => router.push("/sign-in")} className="mt-4 items-center">
+          <Text className="font-mono text-[11px] text-red-600">Already have an account?</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>

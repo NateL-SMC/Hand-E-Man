@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from "react";
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "./Header";
 import { Avatar, Button } from "./ui";
 import { useAuth } from "../context/authContext";
 import { deleteMyAccount, resetPassword, submitReport, updateMyProfile } from "../lib/api";
 import { useNavSpace } from "../lib/useNavSpace";
+import { confirmDialog, showAlert } from "../lib/dialog";
 
 const fmt = (s?: string | null) => {
   if (!s) return "—";
@@ -49,35 +50,28 @@ export default function ProfileView({ navbar }: { navbar: ReactNode }) {
     if (!user.email) return;
     try {
       await resetPassword(user.email);
-      Alert.alert("Check your email", "We sent you a password reset link.");
+      showAlert("Check your email", "We sent you a password reset link.");
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      showAlert("Error", e.message);
     }
   };
 
   const confirmDelete = () =>
-    Alert.alert("Delete account?", "This cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteMyAccount(); // _layout redirects to sign-in when auth state clears
-          } catch (e: any) {
-            const stale = e.code === "auth/requires-recent-login";
-            Alert.alert(stale ? "Please log in again" : "Error", stale ? "For security, log out and back in, then retry." : e.message);
-          }
-        },
-      },
-    ]);
+    confirmDialog("Delete account?", "This cannot be undone.", async () => {
+      try {
+        await deleteMyAccount(); // _layout redirects to sign-in when auth state clears
+      } catch (e: any) {
+        const stale = e.code === "auth/requires-recent-login";
+        showAlert(stale ? "Please log in again" : "Error", stale ? "For security, log out and back in, then retry." : e.message);
+      }
+    });
 
   const sendReport = async () => {
     if (!report.trim()) return;
     await submitReport(user.uid, report.trim());
     setReport("");
     setReportOpen(false);
-    Alert.alert("Thanks!", "Your report has been submitted.");
+    showAlert("Thanks!", "Your report has been submitted.");
   };
 
   return (
